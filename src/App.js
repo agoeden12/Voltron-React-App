@@ -1,53 +1,117 @@
-import logo from "./logo.svg";
 import "./App.css";
-import React, {Component} from "react";
-// import io from "socket.io";
+import React, { Component } from "react";
+import {Button, Badge} from "react-bootstrap";
+import Graph from "./components/Graph";
 
-  const ws = new WebSocket("ws://localhost:5000/point");
-
+const axios = require("axios");
 class App extends Component {
+  _isMounted = false;
+  ws = new WebSocket("ws://localhost:5000/point");
 
   constructor(props) {
     super(props);
 
     this.state = {
-      dataFromServer: []
-    }
+      labels: [],
+      voltage: [],
+      current: [],
+      isConnected: this.ws.readyState === 1 ? true : false,
+      lowestCell: 0,
+      averageCell: 0,
+      highestCell: 0,
+    };
+
+    this.startSocket = this.startSocket.bind(this);
   }
 
   componentDidMount() {
-    ws.onopen = () => {
-      console.log("connected");
+    this._isMounted = true;
+    this.startSocket();
+  }
+
+  startSocket = () => {
+    axios.get("http://localhost:5000/sessionPoints").then((res) => {
+      res.data.forEach((point) => {
+        this.state.labels.push(point.time);
+        this.state.voltage.push(point.voltage);
+        this.state.current.push(point.current);
+      });
+
+      this.setState({
+        labels: [...this.state.labels],
+        voltage: [...this.state.voltage],
+        current: [...this.state.current],
+        lowestCell: res.data[res.data.length-1].lowestCell,
+        averageCell: res.data[res.data.length-1].averageCell,
+        highestCell: res.data[res.data.length-1].highestCell,
+      });
+    });
+
+    this.ws.onopen = () => {
+      this.setState({
+        isConnected: true,
+      });
     };
 
-    ws.onmessage = (msg) => {
+    this.ws.onmessage = (msg) => {
       const message = JSON.parse(msg.data);
-      this.state.dataFromServer.push(message);
-      console.log(this.state.dataFromServer);
+      this.setState({
+        labels: [...this.state.labels, message.time],
+        voltage: [...this.state.voltage, message.voltage],
+        current: [...this.state.current, message.current],
+        lowestCell: message.lowestCell,
+        averageCell: message.averageCell,
+        highestCell: message.highestCell,
+      });
     };
 
-    ws.onclose = () => {
-      console.log("disconnected");
+    this.ws.onclose = () => {
+      this.setState({
+        isConnected: false,
+      });
     };
+
+    this.ws.onerror = () => {
+      this.ws = new WebSocket("ws://localhost:5000/point");
+    };
+  };
+
+  componentWillUnmount() {
+    this._isMounted = false;
   }
 
   render() {
     return (
       <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <p>
-            Edit <code>src/App.js</code> and save to reload.
-          </p>
-          <a
-            className="App-link"
-            href="https://reactjs.org"
-            target="_blank"
-            rel="noopener noreferrer"
+        <div className="cells">
+          <Badge pill variant="info">Lowest Cell: {this.state.lowestCell}</Badge>
+          <Badge pill variant="info">Highest Cell: {this.state.highestCell}</Badge>
+          <Badge pill variant="info">Average Cell: {this.state.averageCell}</Badge>
+        </div>
+        <Graph
+          className="Graph"
+          labels={this.state.labels}
+          voltage={this.state.voltage}
+          current={this.state.current}
+        />
+        <div className="connection">
+          <p>Connection Status:</p>
+          <Button
+            variant={
+              this.state.isConnected ? "outline-success" : "outline-danger"
+            }
+            onClick={() => {
+              if (!this.state.isConnected) {
+                this.ws = new WebSocket("ws://localhost:5000/point");
+                this.startSocket();
+                console.log("socket reconnecting");
+              }
+              console.log("button clicked");
+            }}
           >
-            Learn React
-          </a>
-        </header>
+            {this.state.isConnected ? "Connected" : "Not Connected"}
+          </Button>
+        </div>
       </div>
     );
   }
