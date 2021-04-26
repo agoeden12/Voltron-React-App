@@ -6,7 +6,7 @@ import Graph from "./components/Graph";
 const axios = require("axios");
 class App extends Component {
   _isMounted = false;
-  ws = new WebSocket("ws://127.0.0.1:5000/point");
+  ws = new WebSocket(`ws://${window.location.hostname}:5000/point`);
 
   constructor(props) {
     super(props);
