@@ -37,13 +37,15 @@ class App extends Component {
         this.state.current.push(point.current);
       });
 
+      const dataLen = res.data.length;
+
       this.setState({
         labels: [...this.state.labels],
         voltage: [...this.state.voltage],
         current: [...this.state.current],
-        lowestCell: res.data[res.data.length-1].lowestCell,
-        averageCell: res.data[res.data.length-1].averageCell,
-        highestCell: res.data[res.data.length-1].highestCell,
+        lowestCell: dataLen ? res.data[res.data.length-1].lowestCell : 0,
+        averageCell: dataLen ? res.data[res.data.length-1].averageCell : 0,
+        highestCell: dataLen ? res.data[res.data.length-1].highestCell : 0,
       });
     });
 
