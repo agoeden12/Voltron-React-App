@@ -2,6 +2,8 @@ import React, { Component } from "react";
 import { Line } from "react-chartjs-2";
 
 class Graph extends Component {
+
+  // Receive current data and generate the graphs
   constructor(props) {
     super(props);
 
@@ -10,6 +12,7 @@ class Graph extends Component {
     this.current = this.props.current;
   }
 
+  // Update the graphs as new data is received
   componentWillReceiveProps(nextProps) {
       this.labels = nextProps.labels;
       this.voltage = nextProps.voltage;
@@ -51,6 +54,8 @@ class Graph extends Component {
               max: 100,
             },
           },
+
+          // Removing animations creates smooth data updates in the graph
           animation: false,
           pointRadius: 0,
           pointHitRadius: 20,

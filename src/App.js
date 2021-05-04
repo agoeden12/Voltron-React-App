@@ -6,8 +6,11 @@ import Graph from "./components/Graph";
 const axios = require("axios");
 class App extends Component {
   _isMounted = false;
+
+  // Create the websocket variable and connect given the device IP from the browser url
   ws = new WebSocket(`ws://${window.location.hostname}:5000/point`);
 
+  // Create the application variables and update connection status of the websocket
   constructor(props) {
     super(props);
 
@@ -29,7 +32,10 @@ class App extends Component {
     this.startSocket();
   }
 
+  // This is called whenever the websocket disconnects and the user wanted to reconnect
   startSocket = () => {
+
+    // Sync data with the database before listening for new messages
     axios.get("http://localhost:5000/sessionPoints").then((res) => {
       res.data.forEach((point) => {
         this.state.labels.push(point.time);
@@ -49,12 +55,14 @@ class App extends Component {
       });
     });
 
+    // Set connection status
     this.ws.onopen = () => {
       this.setState({
         isConnected: true,
       });
     };
 
+    // Update the data as new messages are received
     this.ws.onmessage = (msg) => {
       const message = JSON.parse(msg.data);
       this.setState({
@@ -67,12 +75,14 @@ class App extends Component {
       });
     };
 
+    // Update connection status
     this.ws.onclose = () => {
       this.setState({
         isConnected: false,
       });
     };
 
+    // Reconnect when an error occurs
     this.ws.onerror = () => {
       this.ws = new WebSocket("ws://localhost:5000/point");
     };
@@ -98,6 +108,7 @@ class App extends Component {
         />
         <div className="connection">
           <p>Connection Status:</p>
+          {/* This button displays the current connection status and triggers the reconnect and sync when the websocket disconnects */}
           <Button
             variant={
               this.state.isConnected ? "outline-success" : "outline-danger"
